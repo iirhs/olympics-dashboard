@@ -68,18 +68,17 @@ if st.session_state.active_tab == "Visualizations":
                             title="Overall Country-wise Medal Count", color_continuous_scale=px.colors.sequential.Plasma, width=1000, height=600)
 
     elif display_chart == "Sports Over Time":
-        filtered_participation = filtered_data[filtered_data['Sport'].notna()]
+        sport_options = st.multiselect("Select Sports to Compare", sport_list, default=sport_list[:1] if sport_list else [])
+        filtered_participation = filtered_data[filtered_data['Sport'].isin(sport_options)]
         participation = filtered_participation.groupby("Year").size().reset_index(name="Athlete Count")
         fig = px.line(participation, x="Year", y="Athlete Count", title="Sports Participation Over Time",
                       color_discrete_sequence=px.colors.qualitative.Set1, markers=True)
 
     elif display_chart == "Medal Distribution":
-        # Medal Bar Chart
         medal_counts = filtered_data["Medal"].value_counts()
-        medal_bar_chart = px.bar(medal_counts, x=medal_counts.index, y=medal_counts.values, 
-                                 title="Medal Distribution", labels={"x": "Medal Type", "y": "Count"}, 
-                                 color=medal_counts.index, color_discrete_sequence=px.colors.qualitative.Bold)
-
+        fig = px.bar(medal_counts, x=medal_counts.index, y=medal_counts.values, title="Medal Distribution",
+                     labels={"x": "Medal Type", "y": "Count"}, color=medal_counts.index, color_discrete_sequence=px.colors.qualitative.Bold)
+        
         # Medal Share Donut Chart (Top 15 Teams + "Others")
         st.subheader("🏅 Medal Share by Teams (Overall)")
 
@@ -130,9 +129,8 @@ if st.session_state.active_tab == "Visualizations":
             margin=dict(t=50, b=50, l=50, r=150)  # Add space for legend
         )
 
-        # Display elements in correct order: Bar Chart first, then Donut Chart
-        st.plotly_chart(medal_bar_chart, use_container_width=True, key="medal_bar_chart")
-        st.plotly_chart(donut_fig, use_container_width=True, key="medal_donut_chart")
+        # Display chart
+        st.plotly_chart(donut_fig, use_container_width=True)
 
     elif display_chart == "Age Distribution":
         fig = px.histogram(filtered_data, x="Age", title="Age Distribution of Athletes", nbins=50, color_discrete_sequence=["#ff7f0e"])
@@ -140,7 +138,7 @@ if st.session_state.active_tab == "Visualizations":
     if fig:
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("")
+        st.warning("No data available for the selected filters. Try adjusting your selection.")
 
 # --------------------- 📋 Data Filtering Tab ---------------------
 if st.session_state.active_tab == "Data Filtering":
