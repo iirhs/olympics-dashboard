@@ -40,7 +40,8 @@ selected_sports = st.sidebar.multiselect("Select Sport", sport_list, default=[])
 age_range = st.sidebar.slider("Select Age Range", min_value=10, max_value=50, value=(10, 50))
 
 # Visualization Selection
-display_chart = st.sidebar.selectbox("Select Visualization", ["None", "Choropleth Map", "Sports Over Time", "Medal Distribution", "Age Distribution"])
+display_chart = st.sidebar.selectbox("Select Visualization", 
+                                     ["None", "🌍 Global Medal Distribution", "📈 Athlete Participation Trends", "🏅 Medal Breakdown", "📊 Athlete Age Analysis"])
 
 # Filter Data (ensuring filters apply to all visualizations)
 filtered_data = athletes_df.copy()
@@ -59,88 +60,78 @@ st.sidebar.markdown(f"**Showing {len(filtered_data)} results**")
 if st.session_state.active_tab == "Visualizations":
     st.subheader("Visualizations")
 
-    fig = None
+    if display_chart == "None":
+        # Default Information (Olympic Summary)
+        st.markdown("### Welcome to the Olympics Dashboard!")
+        st.write("Use the filters on the left to explore various aspects of the Olympic Games from 1896 to 2016.")
 
-    if display_chart == "Choropleth Map":
-        filtered_medal_data = filtered_data[filtered_data['Medal'].notna()]
-        medal_counts = filtered_medal_data.groupby("NOC").size().reset_index(name="count")
-        fig = px.choropleth(medal_counts, locations="NOC", locationmode="ISO-3", color="count",
-                            title="Overall Country-wise Medal Count", color_continuous_scale=px.colors.sequential.Plasma, width=1000, height=600)
+        # Summary Statistics
+        total_editions = athletes_df["Year"].nunique()
+        total_host_cities = athletes_df["City"].nunique()
+        total_medals = medal_data.shape[0]
+        total_athletes = athletes_df["ID"].nunique()
+        total_nations = athletes_df["NOC"].nunique()
+        total_sports = athletes_df["Sport"].nunique()
 
-    elif display_chart == "Sports Over Time":
-        filtered_participation = filtered_data[filtered_data['Sport'].notna()]
-        participation = filtered_participation.groupby("Year").size().reset_index(name="Athlete Count")
-        fig = px.line(participation, x="Year", y="Athlete Count", title="Sports Participation Over Time",
-                      color_discrete_sequence=px.colors.qualitative.Set1, markers=True)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("🏟 Total Olympic Editions", total_editions)
+            st.metric("🌍 Total Host Cities", total_host_cities)
+        with col2:
+            st.metric("🏅 Total Medals Awarded", total_medals)
+            st.metric("🏃‍♂️ Total Athletes Participated", total_athletes)
+        with col3:
+            st.metric("🏆 Total Nations Participated", total_nations)
+            st.metric("⚽ Total Sports Held", total_sports)
 
-    elif display_chart == "Medal Distribution":
-        # Medal Bar Chart
-        medal_counts = filtered_data["Medal"].value_counts()
-        medal_bar_chart = px.bar(medal_counts, x=medal_counts.index, y=medal_counts.values, 
-                                 title="Medal Distribution", labels={"x": "Medal Type", "y": "Count"}, 
-                                 color=medal_counts.index, color_discrete_sequence=px.colors.qualitative.Bold)
+        # Default Chart: Participation Trends Over Time
+        #participation_trends = athletes_df.groupby("Year").size().reset_index(name="Athlete Count")
+        #fig = px.line(participation_trends, x="Year", y="Athlete Count", 
+        #             title="Olympic Participation Trends Over Time", 
+        #            markers=True, color_discrete_sequence=["#ff7f0e"])
+        #st.plotly_chart(fig, use_container_width=True)
 
-        # Medal Share Donut Chart (Top 15 Teams + "Others")
-        st.subheader("🏅 Medal Share by Teams (Overall)")
-
-        # Count medals for each country
-        team_medal_counts = medal_data.groupby("NOC")["Medal"].count().reset_index()
-        team_medal_counts.columns = ["Team", "Total Medals"]
-
-        # Sort and limit to top 15 teams
-        team_medal_counts = team_medal_counts.sort_values(by="Total Medals", ascending=False)
-        top_teams = team_medal_counts[:15]  # Top 15 teams
-        others_sum = team_medal_counts[15:]["Total Medals"].sum()  # Sum of remaining teams
-
-        # Append "Others" category
-        others_row = pd.DataFrame({"Team": ["Others"], "Total Medals": [others_sum]})
-        final_medal_counts = pd.concat([top_teams, others_row])
-
-        # Define pull effect: Slightly pull out small segments
-        pull_effect = [0.1 if val < 5 else 0 for val in final_medal_counts["Total Medals"]]
-
-        # Create improved donut chart
-        donut_fig = px.pie(
-            final_medal_counts,
-            names="Team",
-            values="Total Medals",
-            title="Medal Share of Top 15 Teams",
-            hole=0.4,
-            color_discrete_sequence=px.colors.qualitative.Set2,  # Similar color theme
-        )
-
-        # Improve layout & label positioning
-        donut_fig.update_traces(
-            textinfo="percent+label",
-            pull=pull_effect,  # Pull small slices out for visibility
-            textposition="outside",  # Ensure labels are placed outside
-            textfont_size=12  # Increase text size for better readability
-        )
-
-        # Move legend vertically to the right
-        donut_fig.update_layout(
-            legend_title_text="Teams",
-            legend=dict(
-                orientation="v",
-                yanchor="middle",
-                y=0.5,
-                xanchor="left",
-                x=1.1
-            ),
-            margin=dict(t=50, b=50, l=50, r=150)  # Add space for legend
-        )
-
-        # Display elements in correct order: Bar Chart first, then Donut Chart
-        st.plotly_chart(medal_bar_chart, use_container_width=True, key="medal_bar_chart")
-        st.plotly_chart(donut_fig, use_container_width=True, key="medal_donut_chart")
-
-    elif display_chart == "Age Distribution":
-        fig = px.histogram(filtered_data, x="Age", title="Age Distribution of Athletes", nbins=50, color_discrete_sequence=["#ff7f0e"])
-
-    if fig:
-        st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("")
+        fig = None
+        if display_chart == "🌍 Global Medal Distribution":
+            filtered_medal_data = filtered_data[filtered_data['Medal'].notna()]
+            medal_counts = filtered_medal_data.groupby("NOC").size().reset_index(name="count")
+            fig = px.choropleth(medal_counts, locations="NOC", locationmode="ISO-3", color="count",
+                                title="Overall Country-wise Medal Count", color_continuous_scale=px.colors.sequential.Plasma, width=1000, height=600)
+
+        elif display_chart == "📈 Athlete Participation Trends":
+            filtered_participation = filtered_data[filtered_data['Sport'].notna()]
+            participation = filtered_participation.groupby("Year").size().reset_index(name="Athlete Count")
+            fig = px.line(participation, x="Year", y="Athlete Count", title="Sports Participation Over Time",
+                          color_discrete_sequence=px.colors.qualitative.Set1, markers=True)
+
+        elif display_chart == "🏅 Medal Breakdown":
+            # Medal Bar Chart
+            medal_counts = filtered_data["Medal"].value_counts()
+            medal_bar_chart = px.bar(medal_counts, x=medal_counts.index, y=medal_counts.values, 
+                                     title="Medal Distribution", labels={"x": "Medal Type", "y": "Count"}, 
+                                     color=medal_counts.index, color_discrete_sequence=px.colors.qualitative.Bold)
+
+            # Medal Share Donut Chart
+            team_medal_counts = medal_data.groupby("NOC")["Medal"].count().reset_index()
+            team_medal_counts.columns = ["Team", "Total Medals"]
+            team_medal_counts = team_medal_counts.sort_values(by="Total Medals", ascending=False)
+            top_teams = team_medal_counts[:15]
+            others_sum = team_medal_counts[15:]["Total Medals"].sum()
+            others_row = pd.DataFrame({"Team": ["Others"], "Total Medals": [others_sum]})
+            final_medal_counts = pd.concat([top_teams, others_row])
+
+            donut_fig = px.pie(final_medal_counts, names="Team", values="Total Medals", 
+                               title="Medal Share of Top 15 Teams", hole=0.4, color_discrete_sequence=px.colors.qualitative.Set2)
+
+            st.plotly_chart(medal_bar_chart, use_container_width=True, key="medal_bar_chart")
+            st.plotly_chart(donut_fig, use_container_width=True, key="medal_donut_chart")
+
+        elif display_chart == "📊 Athlete Age Analysis":
+            fig = px.histogram(filtered_data, x="Age", title="Age Distribution of Athletes", nbins=50, color_discrete_sequence=["#ff7f0e"])
+
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
 
 # --------------------- 📋 Data Filtering Tab ---------------------
 if st.session_state.active_tab == "Data Filtering":
