@@ -35,7 +35,7 @@ if tab2_button:
 # Sidebar Filters (apply to both tabs)
 st.sidebar.header("Filters")
 selected_country = st.sidebar.selectbox("Select Country", ["None"] + noc_list, index=0)
-selected_years = st.sidebar.multiselect("Select Year", year_list, default=[year_list[-1]])
+selected_years = st.sidebar.multiselect("Select Year", year_list, default=[])
 selected_sports = st.sidebar.multiselect("Select Sport", sport_list, default=[])
 age_range = st.sidebar.slider("Select Age Range", min_value=10, max_value=50, value=(10, 50))
 
